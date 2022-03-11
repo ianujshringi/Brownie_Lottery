@@ -4,9 +4,12 @@ pragma solidity ^0.7.0;
 
 import "@chainlink/contracts/src/v0.6/interfaces/AggregatorV3Interface.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
+import "@chainlink/contracts/src/v0.6/VRFConsumerBase.sol";
 
-contract Lottery is Ownable {
+contract Lottery is Ownable, VRFConsumerBase {
     address payable[] public players;
+    address payable public recentWinner;
+    uint256 randomness;
     uint256 public entryFee;
     AggregatorV3Interface internal ethUsdPriceFeed;
     AggregatorV3Interface internal inrUsdPriceFeed;
@@ -18,13 +21,22 @@ contract Lottery is Ownable {
     }
     LOTTERY_STATE public lottery_state;
 
+    uint256 public fee;
+    bytes32 public keyHash;
+
     constructor(
         address _ethUsdPriceFeedAddress,
-        address _inrUsdPriceFeedAddress
-    ) {
+        address _inrUsdPriceFeedAddress,
+        address _vrfCoordinator,
+        address _linkToken,
+        bytes32 _keyHash,
+        uint256 _fee
+    ) VRFConsumerBase(_vrfCoordinator, _linkToken) {
         entryFee = 0;
         ethUsdPriceFeed = AggregatorV3Interface(_ethUsdPriceFeedAddress);
         inrUsdPriceFeed = AggregatorV3Interface(_inrUsdPriceFeedAddress);
+        keyHash = _keyHash;
+        fee = _fee;
         lottery_state = LOTTERY_STATE.CLOSED;
     }
 
@@ -56,5 +68,26 @@ contract Lottery is Ownable {
         lottery_state = LOTTERY_STATE.OPEN;
     }
 
-    function endLottery() public onlyOwner {}
+    function endLottery() public onlyOwner {
+        lottery_state = LOTTERY_STATE.CALCULATING_WINNER;
+        bytes32 requestId = requestRandomness(keyHash, fee);
+    }
+
+    function fulfillRandomness(bytes32 _requestId, uint256 _randomness)
+        internal
+        override
+    {
+        require(
+            lottery_state == LOTTERY_STATE.CALCULATING_WINNER,
+            "Can Not Complete Request"
+        );
+        require(_randomness > 0, "Random Not Found !");
+        uint256 winnerIndex = _randomness % players.length;
+        recentWinner = players[winnerIndex];
+        recentWinner.transfer(address(this).balance);
+        randomness = _randomness;
+
+        players = new address payable[](0);
+        lottery_state = LOTTERY_STATE.CLOSED;
+    }
 }
