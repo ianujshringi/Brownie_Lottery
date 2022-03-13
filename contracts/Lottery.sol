@@ -56,7 +56,7 @@ contract Lottery is Ownable, VRFConsumerBase {
         (, int256 price, , , ) = ethUsdPriceFeed.latestRoundData();
         uint256 inrToethPrice = ((inrToUsd() * 10**18) / uint256(price)); //in 18 decimals wei
         uint256 costToEnter = 100 * inrToethPrice;
-        return costToEnter;
+        return uint256(costToEnter);
     }
 
     function startLottery() public onlyOwner {
@@ -84,9 +84,10 @@ contract Lottery is Ownable, VRFConsumerBase {
         require(_randomness > 0, "Random Not Found !");
         uint256 winnerIndex = _randomness % players.length;
         recentWinner = players[winnerIndex];
-        recentWinner.transfer(address(this).balance);
-        randomness = _randomness;
 
+        recentWinner.transfer(address(this).balance);
+
+        randomness = _randomness;
         players = new address payable[](0);
         lottery_state = LOTTERY_STATE.CLOSED;
     }

@@ -52,13 +52,17 @@ def get_contract(contract_name):
     if network.show_active() in LOCAL_BLOCKCHAIN_ENV:
         if len(contract_type) <= 0:
             deploy_mocks()
-        contract = contract_type[-1]
+        if contract_name == "eth_usd_price_feed":
+            contract = contract_type[-2]
+        else:
+            contract = contract_type[-1]
 
     else:
         contract_address = config["networks"][network.show_active()][contract_name]
         contract = Contract.from_abi(
             contract_type.name, contract_address, contract_type.abi
         )
+    print(f"{contract_name} : {contract}")
     return contract
 
 
@@ -84,3 +88,13 @@ def deploy_mocks(
     VRFCoordinatorMock.deploy(link_token.address, {"from": account})
 
     print("\n---------------------Mocks Deployed--------------------\n")
+
+
+def fund_with_link(
+    contract_address, account=None, link_token=None, amount=1000000000000000
+):  # =0.1link
+    account = account if account else get_account
+    link_token = link_token if link_token else get_contract("link_token")
+    tx = link_token.transfer(contract_address, amount, {"from": account})
+    tx.wait(1)
+    print("Contract Funded!")
