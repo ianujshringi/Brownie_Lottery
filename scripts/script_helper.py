@@ -62,12 +62,12 @@ def get_contract(contract_name):
         contract = Contract.from_abi(
             contract_type.name, contract_address, contract_type.abi
         )
-    print(f"{contract_name} : {contract}")
+    # print(f"{contract_name} : {contract}")
     return contract
 
 
 DECIMALS = 8
-INITIAL_ETH_USD_VALUE = 200000000000
+INITIAL_ETH_USD_VALUE = 335812000000
 INITIAL_INR_USD_VALUE = 1300000
 
 
@@ -91,9 +91,9 @@ def deploy_mocks(
 
 
 def fund_with_link(
-    contract_address, account=None, link_token=None, amount=1000000000000000
+    contract_address, account=None, link_token=None, amount=100000000000000000
 ):  # =0.1link
-    account = account if account else get_account
+    account = account if account else get_account()
     link_token = link_token if link_token else get_contract("link_token")
     tx = link_token.transfer(contract_address, amount, {"from": account})
     tx.wait(1)
