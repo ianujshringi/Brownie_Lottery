@@ -6,7 +6,7 @@ from scripts.script_helper import get_account, get_contract, fund_with_link
 def deploy_lottery():
     account = get_account()
     print("\n------------------Deploying Lottery--------------------\n")
-    Lottery.deploy(
+    lottery = Lottery.deploy(
         get_contract("eth_usd_price_feed").address,
         get_contract("inr_usd_price_feed").address,
         get_contract("vrf_coordinator").address,
@@ -16,6 +16,7 @@ def deploy_lottery():
         {"from": account},
     )
     print("\n--------------------Lottery Deployed-------------------\n")
+    return lottery
 
 
 def enter_lottery():
@@ -24,7 +25,7 @@ def enter_lottery():
     fee = lottery.getEntranceFee()
     print(f"\nEntry fee : {fee} \n")
     fee += 100000000
-    tx = lottery.enter({"from": account, "value": fee})
+    tx = lottery.enter({"from": account, "value": fee, "allow_revert": True})
     tx.wait(1)
     print("Entered lottery!")
 

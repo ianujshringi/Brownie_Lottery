@@ -14,6 +14,8 @@ contract Lottery is Ownable, VRFConsumerBase {
     AggregatorV3Interface internal ethUsdPriceFeed;
     AggregatorV3Interface internal inrUsdPriceFeed;
 
+    event RequestedRandomness(bytes32 requestId);
+
     enum LOTTERY_STATE {
         OPEN,
         CLOSED,
@@ -41,7 +43,10 @@ contract Lottery is Ownable, VRFConsumerBase {
     }
 
     function enter() public payable {
-        require(lottery_state == LOTTERY_STATE.OPEN);
+        require(
+            lottery_state == LOTTERY_STATE.OPEN,
+            "Lottery Is Not Yet Started !"
+        );
         // Rupee 100 minimum
         require(msg.value >= entryFee, "Not Enough Money To Enter Lottery!");
         players.push(payable(msg.sender));
@@ -71,6 +76,7 @@ contract Lottery is Ownable, VRFConsumerBase {
     function endLottery() public onlyOwner {
         lottery_state = LOTTERY_STATE.CALCULATING_WINNER;
         bytes32 requestId = requestRandomness(keyHash, fee);
+        emit RequestedRandomness(requestId);
     }
 
     function fulfillRandomness(bytes32 _requestId, uint256 _randomness)
@@ -82,6 +88,7 @@ contract Lottery is Ownable, VRFConsumerBase {
             "Can Not Complete Request"
         );
         require(_randomness > 0, "Random Not Found !");
+
         uint256 winnerIndex = _randomness % players.length;
         recentWinner = players[winnerIndex];
 
